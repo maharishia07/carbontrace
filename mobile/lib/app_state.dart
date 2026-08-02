@@ -73,6 +73,17 @@ class AppState extends ChangeNotifier {
     if (vehicle != null) await selectVehicle(vehicle!.id);
   }
 
+  /// Forget the selected vehicle and return to the vehicle list.
+  Future<void> clearVehicle() async {
+    vehicle = null;
+    dashboard = null;
+    trips = [];
+    alerts = [];
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('vehicleId');
+    notifyListeners();
+  }
+
   Future<Vehicle> registerVehicle({
     required String name,
     required String make,

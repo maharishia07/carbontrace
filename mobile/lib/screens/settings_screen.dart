@@ -53,6 +53,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (v) => state.setAutoRecord(v),
           ),
           const Divider(height: 32),
+          ListTile(
+            leading: const Icon(Icons.swap_horiz),
+            title: const Text('Switch vehicle'),
+            subtitle: const Text('Go back to the vehicle list'),
+            onTap: () {
+              context.read<AppState>().clearVehicle();
+              Navigator.popUntil(context, (r) => r.isFirst);
+            },
+          ),
+          const Divider(height: 32),
           const ListTile(
             leading: Icon(Icons.battery_saver),
             title: Text('Battery optimisation'),
