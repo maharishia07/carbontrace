@@ -38,7 +38,10 @@ python -m app.demo              # seed demo vehicle + simulated healthy→degrad
 
 - **Toolchain installed**: Flutter 3.44.8 (`C:\Users\Maharishi.A\flutter`), Temurin JDK 17, Android SDK 35+36 — `flutter doctor` green; PATH/JAVA_HOME/ANDROID_HOME set user-wide.
 - **First APK built** (debug, 143 MB) after wiring the native layer into the generated project (package fixed to `com.carbontrace.carbontrace`, manifest merged, minSdk 26). Analyzer + Dart tests clean.
-- **Installed on a real phone** (realme NARZO N65 5G). Note: ADB on this phone was flaky (device enumerates in Windows but not in adb) — installed via manual APK copy to Downloads instead. App connects to the PC backend over Wi-Fi (`http://192.168.1.3:8000`) and renders the Demo Swift dashboard with the live service alert.
+- **Installed on a real phone** (realme NARZO N65 5G). Note: ADB on this phone was flaky (device enumerates in Windows but not in adb) — installed via manual APK copy to Downloads instead.
+- **Networking lesson learned**: the Airtel home router blocks device-to-device traffic (AP isolation), so the phone could not reach the PC backend over home Wi-Fi. Working setup: **phone hotspot → laptop connects to it** → server URL `http://10.132.28.182:8000`. Use the same hotspot setup at the hackathon (venue Wi-Fi will have isolation too).
+- **APK updates without USB**: serve the APK from the PC (`python -m http.server 8080` in a folder with the APK) and download it in the phone browser at `http://<PC-IP>:8080` — used this after the USB/MTP connection became unreliable.
+- **End-to-end demo verified on device**: Demo Swift dashboard renders on the phone — stat tiles, g/km trend with baseline band, +27% drift service alert, trips list, mark-as-serviced flow. Two UI gaps found on-device and fixed: setup screen didn't reload after changing the server URL; no way to switch vehicles (added Settings → Switch vehicle).
 
 ### Next session
 1. Record a real trip with the phone (Record tab) and verify upload + scoring.
