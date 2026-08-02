@@ -88,20 +88,42 @@ class ObdBridge(private val activity: Activity) {
             "maf_g_s" to pid("0110") { a, b -> (a * 256 + b) / 100.0 },
             "fuel_level_pct" to pid("012F") { a, _ -> a * 100.0 / 255.0 },
             "speed_kmh" to pid("010D") { a, _ -> a.toDouble() },
+            // true odometer (SAE J1979 PID A6, ~2019+ vehicles)
+            "odometer_km" to pid4("01A6") { a, b, c, d ->
+                (a * 16777216.0 + b * 65536.0 + c * 256.0 + d) / 10.0
+            },
+            // fallback cross-check on older cars
+            "dist_since_clear_km" to pid("0131") { a, b -> a * 256.0 + b },
         )
     }
 
-    private fun pid(cmd: String, decode: (Int, Int) -> Double): Double? {
+    /** Send once, return however many data bytes the ECU answered with. */
+    private fun dataBytes(cmd: String): List<Int>? {
         val raw = command(cmd) ?: return null
         // expected like "410C1AF8" (ATS0 strips spaces); find the echo of the PID
         val hex = raw.replace(Regex("[^0-9A-Fa-f]"), "")
         val marker = "41" + cmd.substring(2)
         val at = hex.indexOf(marker)
-        if (at < 0 || hex.length < at + marker.length + 2) return null
+        if (at < 0) return null
         val data = hex.substring(at + marker.length)
-        val a = data.substring(0, 2).toIntOrNull(16) ?: return null
-        val b = if (data.length >= 4) data.substring(2, 4).toIntOrNull(16) ?: 0 else 0
-        return decode(a, b)
+        val out = mutableListOf<Int>()
+        var i = 0
+        while (i + 2 <= data.length && out.size < 8) {
+            out.add(data.substring(i, i + 2).toIntOrNull(16) ?: break)
+            i += 2
+        }
+        return if (out.isEmpty()) null else out
+    }
+
+    private fun pid(cmd: String, decode: (Int, Int) -> Double): Double? {
+        val b = dataBytes(cmd) ?: return null
+        return decode(b[0], b.getOrElse(1) { 0 })
+    }
+
+    private fun pid4(cmd: String, decode: (Int, Int, Int, Int) -> Double): Double? {
+        val b = dataBytes(cmd) ?: return null
+        if (b.size < 4) return null
+        return decode(b[0], b[1], b[2], b[3])
     }
 
     /** Send a command, read until the ELM '>' prompt (2s budget). */

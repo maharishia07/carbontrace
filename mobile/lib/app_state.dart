@@ -206,6 +206,11 @@ class AppState extends ChangeNotifier {
         coldStart: t.coldStart,
         fuelLitres: obdLitres > 0.05 ? obdLitres : null,
       );
+      // ECU reports the true odometer on ~2019+ cars: correct any GPS drift
+      final ecuOdo = obd.latest.value?['odometer_km'];
+      if (ecuOdo != null && ecuOdo > 0) {
+        await api.setOdometer(vehicle!.id, ecuOdo);
+      }
       await refresh();
     } catch (e) {
       // Trip stays in the recorder's pending queue for retry on next launch.
