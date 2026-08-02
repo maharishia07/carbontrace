@@ -6,14 +6,15 @@ This file tracks build progress. Updated with every push.
 
 | # | Milestone | Status | Notes |
 |---|-----------|--------|-------|
-| 1 | Repo + GitHub setup | 🔄 in progress | git init done, GitHub repo pending |
-| 2 | Emission engine + anomaly detector | ⬜ pending | COPERT-style EF(v), idle/cold-start, EWMA drift |
-| 3 | FastAPI backend + trip simulator | ⬜ pending | vehicles, trips, dashboard, alerts endpoints |
-| 4 | Flutter app source | ⬜ pending | SDK not installed on dev machine — source written compile-ready |
-| 5 | Android native auto-start service | ⬜ pending | Kotlin foreground service + Bluetooth receiver |
-| 6 | Real-device testing | ⬜ pending | needs a physical Android phone + car |
-| 7 | OBD calibration drives | ⬜ pending | needs a ₹1,000 OBD-II dongle, dev-time only |
-| 8 | Play Store submission | ⬜ pending | background-location disclosure video required |
+| 1 | Repo + GitHub setup | ✅ done | https://github.com/maharishia07/carbontrace |
+| 2 | Emission engine + anomaly detector | ✅ done | COPERT-style EF(v), idle/cold-start, fuel-chemistry path, EWMA drift — 19 tests pass |
+| 3 | FastAPI backend + trip simulator | ✅ done | vehicles, trips, health, alerts, serviced, dashboard; demo seeder fires a real alert (+27% drift) |
+| 4 | Flutter app source | ✅ written (not yet compiled) | full app: 6 screens, trend chart, recorder — needs Flutter SDK for first build |
+| 5 | Android native auto-start service | ✅ written (not yet compiled) | Kotlin foreground service + Bluetooth ACL receiver in mobile/android_native/ |
+| 6 | First Flutter build | ⬜ pending | install Flutter SDK → `flutter create .` → merge android_native/ → `flutter run` |
+| 7 | Real-device testing | ⬜ pending | needs a physical Android phone + car |
+| 8 | OBD calibration drives | ⬜ pending | needs a ₹1,000 OBD-II dongle, dev-time only |
+| 9 | Play Store submission | ⬜ pending | background-location disclosure video required |
 
 ## How to run (current state)
 
@@ -30,6 +31,14 @@ python -m app.demo              # seed demo vehicle + simulated healthy→degrad
 ### 2026-08-02
 - Project started. git repo initialized, execution plan and pitch deck committed.
 - Toolchain: Python 3.11 (FastAPI/pytest ready), Node 24, gh CLI authenticated. Flutter SDK **not** installed — mobile source will be written compile-ready and verified once SDK is available.
+- **Backend shipped**: emission engine (COPERT-shaped EF(v) + idle + cold-start + harsh-accel; fuel-chemistry path when litres known), per-bucket baseline + EWMA drift detector, full REST API, deterministic trip simulator. 19/19 tests pass. One bug found & fixed: "recovered" notices were created as open alerts.
+- **Demo verified**: 40 healthy + 15 degraded (+30% fuel) trips → alert fires at +27.3% drift with 7/7 sustained trips.
+- **Flutter app source written** (13 Dart/Kotlin files): dashboard with CVD-validated status palette + custom trend chart with baseline band, trips list/detail, manual+auto record screen, health screen with mark-serviced loop, vehicle setup, settings. Android auto-start layer (foreground service + Bluetooth ACL receiver) in `mobile/android_native/` with merge instructions. **Not compiled yet** — Flutter SDK missing on this machine; expect minor first-build fixes.
+
+### Next session
+1. Install Flutter SDK → first build (`flutter create .`, merge android_native/, `flutter run`).
+2. Test auto-start against a real car / Bluetooth speaker.
+3. Optional: OBD calibration drives for the accuracy scatter plot.
 
 ## Decisions record
 

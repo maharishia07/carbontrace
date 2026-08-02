@@ -1,0 +1,30 @@
+<!--
+  Merge these entries into android/app/src/main/AndroidManifest.xml
+  after running `flutter create .` (see android_native/README.md).
+-->
+
+<!-- inside <manifest>, above <application> -->
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+<uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+<!-- inside <application> -->
+<service
+    android:name=".TripRecordingService"
+    android:exported="false"
+    android:foregroundServiceType="location" />
+
+<receiver
+    android:name=".BluetoothTripReceiver"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+        <action android:name="android.bluetooth.device.action.ACL_DISCONNECTED" />
+    </intent-filter>
+</receiver>
