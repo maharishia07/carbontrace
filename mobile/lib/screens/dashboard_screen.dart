@@ -51,6 +51,25 @@ class DashboardScreen extends StatelessWidget {
                             style: const TextStyle(fontSize: 13)),
                       ),
                     ),
+                  if (dash.refuelHintAt != null)
+                    Card(
+                      color: const Color(0xFFFFF8E1),
+                      child: ListTile(
+                        leading: const Icon(Icons.local_gas_station,
+                            color: CtColors.watch, size: 30),
+                        title: const Text('Did you refuel?',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 14)),
+                        subtitle: const Text(
+                            'A fuel-station stop was detected on a recent trip. '
+                            'Odometer is already captured — just confirm the litres.',
+                            style: TextStyle(fontSize: 12)),
+                        trailing: FilledButton(
+                          onPressed: () => FillUpSheet.show(context),
+                          child: const Text('Log'),
+                        ),
+                      ),
+                    ),
                   _HealthBanner(),
                   const SizedBox(height: 4),
                   Row(children: [

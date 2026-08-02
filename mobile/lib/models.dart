@@ -78,7 +78,7 @@ class Trip {
   final DateTime startedAt;
   final double distanceKm, durationS, idleS, co2G, gpkm, avgMovingSpeedKmh;
   final int harshEvents, ecoScore;
-  final bool coldStart;
+  final bool coldStart, refuelStop;
   final String bucket, source;
 
   Trip.fromJson(Map<String, dynamic> j)
@@ -93,6 +93,7 @@ class Trip {
         harshEvents = j['harsh_events'] ?? 0,
         ecoScore = j['eco_score'] ?? 0,
         coldStart = j['cold_start'] ?? false,
+        refuelStop = j['refuel_stop'] ?? false,
         bucket = j['bucket'] ?? '',
         source = j['source'] ?? 'model';
 }
@@ -165,6 +166,7 @@ class Dashboard {
   final Health health;
   final EmissionAlert? activeAlert;
   final List<TrendPoint> trend;
+  final DateTime? refuelHintAt;
 
   Dashboard.fromJson(Map<String, dynamic> j)
       : vehicle = Vehicle.fromJson(j['vehicle']),
@@ -177,7 +179,10 @@ class Dashboard {
             : EmissionAlert.fromJson(j['active_alert']),
         trend = (j['trend'] as List<dynamic>? ?? [])
             .map((e) => TrendPoint.fromJson(e))
-            .toList();
+            .toList(),
+        refuelHintAt = j['refuel_hint_at'] != null
+            ? DateTime.parse(j['refuel_hint_at'])
+            : null;
 }
 
 class VehicleClassOption {

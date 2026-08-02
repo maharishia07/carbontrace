@@ -49,6 +49,7 @@ class Trip(Base):
     idle_co2_g: Mapped[float] = mapped_column(Float, default=0.0)
     harsh_events: Mapped[int] = mapped_column(Integer, default=0)
     cold_start: Mapped[bool] = mapped_column(Boolean, default=False)
+    refuel_stop: Mapped[bool] = mapped_column(Boolean, default=False)
     bucket: Mapped[str] = mapped_column(String(10))
     eco_score: Mapped[int] = mapped_column(Integer)
     source: Mapped[str] = mapped_column(String(10), default="model")

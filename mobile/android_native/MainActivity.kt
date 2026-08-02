@@ -13,12 +13,23 @@ class MainActivity : FlutterActivity() {
     companion object {
         const val ENGINE_ID = "carbontrace_engine"
         const val CHANNEL = "carbontrace/recorder"
+        const val OBD_CHANNEL = "carbontrace/obd"
         var channel: MethodChannel? = null
     }
+
+    private var obd: ObdBridge? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         FlutterEngineCache.getInstance().put(ENGINE_ID, flutterEngine)
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        obd = ObdBridge(this).also {
+            it.attach(MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OBD_CHANNEL))
+        }
+    }
+
+    override fun onDestroy() {
+        obd?.disconnect()
+        super.onDestroy()
     }
 }

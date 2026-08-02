@@ -136,6 +136,7 @@ def upload_trip(vehicle_id: int, body: TripIn, db: Session = Depends(get_db)):
         avg_moving_speed_kmh=r.avg_moving_speed_kmh,
         co2_g=r.co2_g, gpkm=r.gpkm, idle_co2_g=r.idle_co2_g,
         harsh_events=r.harsh_events, cold_start=body.cold_start,
+        refuel_stop=r.refuel_stop,
         bucket=r.bucket, eco_score=r.eco_score, source=r.source,
         fuel_litres=body.fuel_litres, engine_version=r.engine_version,
     )
@@ -331,10 +332,30 @@ def dashboard(vehicle_id: int, db: Session = Depends(get_db)):
         {"date": t.started_at.isoformat(), "gpkm": t.gpkm, "bucket": t.bucket}
         for t in trips[-60:]
     ]
+
+    # auto-capture hint: recent trip had a fuel-station-like stop and no
+    # fill-up has been logged since it
+    refuel_hint_at = None
+    recent_refuel_trips = [
+        t for t in trips
+        if t.refuel_stop and t.started_at >= now - timedelta(hours=48)
+    ]
+    if recent_refuel_trips:
+        candidate = recent_refuel_trips[-1]
+        fillup_since = db.scalars(
+            select(FillUp).where(
+                FillUp.vehicle_id == vehicle_id,
+                FillUp.at >= candidate.started_at,
+            )
+        ).first()
+        if not fillup_since:
+            refuel_hint_at = candidate.started_at
+
     return DashboardOut(
         vehicle=VehicleOut.model_validate(vehicle),
         today=_totals(today), week=_totals(week), month=_totals(month),
         health=HealthOut(**report.__dict__),
         active_alert=AlertOut.model_validate(open_alert) if open_alert else None,
         trend=trend,
+        refuel_hint_at=refuel_hint_at,
     )

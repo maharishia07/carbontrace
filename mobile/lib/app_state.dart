@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
 import 'models.dart';
+import 'services/obd_service.dart';
 import 'services/trip_recorder.dart';
 
 /// Global app state: server config, selected vehicle, cached dashboard.
@@ -12,6 +13,7 @@ class AppState extends ChangeNotifier {
 
   final ApiClient api = ApiClient(defaultServer);
   final TripRecorder recorder = TripRecorder();
+  final ObdService obd = ObdService();
 
   Vehicle? vehicle;
   Dashboard? dashboard;
@@ -24,6 +26,10 @@ class AppState extends ChangeNotifier {
 
   AppState() {
     recorder.onTripCompleted = _onTripCompleted;
+    recorder.onStateChanged = () {
+      if (recorder.recording) obd.resetTrip(); // fuel counts per trip
+      notifyListeners();
+    };
   }
 
   Future<void> init() async {
@@ -128,12 +134,15 @@ class AppState extends ChangeNotifier {
 
   Future<void> _onTripCompleted(RecordedTrip t) async {
     if (vehicle == null) return;
+    // with an OBD adapter connected, the ECU measured the fuel directly
+    final obdLitres = obd.consumeTripLitres();
     try {
       await api.uploadTrip(
         vehicle!.id,
         startedAt: t.startedAt,
         points: t.points,
         coldStart: t.coldStart,
+        fuelLitres: obdLitres > 0.05 ? obdLitres : null,
       );
       await refresh();
     } catch (e) {

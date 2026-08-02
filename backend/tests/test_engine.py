@@ -69,6 +69,46 @@ def test_too_short_trip_rejected():
         score_trip(steady_trace(5.0, 0.5), SPEC)
 
 
+def test_refuel_stop_detected_and_excluded_from_idle():
+    """Drive 10 min, stop 4 min (engine off at the pump), drive 10 min."""
+    pts = steady_trace(40.0, 10)
+    t0 = pts[-1].t
+    lat, lon = pts[-1].lat, pts[-1].lon
+    n_stop = 80  # 80 x 3s = 240 s stationary
+    for i in range(1, n_stop + 1):
+        pts.append(GpsPoint(t=t0 + i * 3.0, lat=lat, lon=lon, speed_kmh=0.0))
+    t1 = pts[-1].t
+    for i in range(1, 201):  # 10 more minutes at 40 km/h
+        d = 40.0 * 3.0 / 3600.0
+        lat += d / 110.574
+        pts.append(GpsPoint(t=t1 + i * 3.0, lat=lat, lon=lon, speed_kmh=40.0))
+
+    r = score_trip(pts, SPEC)
+    assert r.refuel_stop
+    assert 200 <= r.refuel_pause_s <= 260
+    # the pump stop must NOT count as engine idling
+    assert r.idle_s < 30
+    assert r.idle_co2_g < 30 * SPEC.idle_g_per_s
+
+
+def test_traffic_jam_idle_not_a_refuel_stop():
+    """A 60-second signal wait stays ordinary idle."""
+    pts = steady_trace(40.0, 5)
+    t0 = pts[-1].t
+    lat, lon = pts[-1].lat, pts[-1].lon
+    for i in range(1, 21):  # 60 s stop
+        pts.append(GpsPoint(t=t0 + i * 3.0, lat=lat, lon=lon, speed_kmh=0.0))
+    t1 = pts[-1].t
+    for i in range(1, 101):
+        d = 40.0 * 3.0 / 3600.0
+        lat += d / 110.574
+        pts.append(GpsPoint(t=t1 + i * 3.0, lat=lat, lon=lon, speed_kmh=40.0))
+
+    r = score_trip(pts, SPEC)
+    assert not r.refuel_stop
+    assert r.idle_s >= 55
+
+
 def test_eco_score_bounds():
     r = score_trip(steady_trace(62.0, 20), SPEC)
     assert 0 <= r.eco_score <= 100

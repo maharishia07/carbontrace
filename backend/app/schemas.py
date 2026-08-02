@@ -91,6 +91,7 @@ class TripOut(BaseModel):
     idle_co2_g: float
     harsh_events: int
     cold_start: bool
+    refuel_stop: bool = False
     bucket: str
     eco_score: int
     source: str
@@ -139,3 +140,6 @@ class DashboardOut(BaseModel):
     health: HealthOut
     active_alert: AlertOut | None
     trend: list[dict]  # [{date, gpkm, bucket}] most recent 60 trips
+    # set when a recent trip contained a fuel-station-like stop and no
+    # fill-up has been logged since — the app prompts with odometer ready
+    refuel_hint_at: datetime | None = None

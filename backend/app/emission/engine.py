@@ -23,6 +23,11 @@ COLD_START_EXTRA = 0.35       # +35% emissions over that distance
 MIN_TRIP_KM = 0.2
 CITY_MAX_KMH = 30.0           # avg moving speed buckets
 MIXED_MAX_KMH = 55.0
+# a mid-trip stationary block this long looks like a refuel (or parcel/chai)
+# stop with the engine off — flagged for auto fill-up capture and excluded
+# from idle emissions
+REFUEL_STOP_MIN_S = 120.0
+REFUEL_STOP_MAX_S = 600.0
 
 
 @dataclass
@@ -49,6 +54,8 @@ class TripResult:
     bucket: str                  # city | mixed | highway
     eco_score: int               # 0-100
     source: str                  # model | fuel
+    refuel_stop: bool = False    # mid-trip engine-off stop detected
+    refuel_pause_s: float = 0.0
     engine_version: str = ENGINE_VERSION
     warnings: list[str] = field(default_factory=list)
 
@@ -97,7 +104,37 @@ def score_trip(
     if distance < MIN_TRIP_KM:
         raise ValueError(f"trip too short to score ({distance:.2f} km)")
 
-    idle_s = sum(dt for dt, _, v in intervals if v < IDLE_SPEED_KMH)
+    # stationary blocks: consecutive sub-idle intervals. A 2-10 min block
+    # with driving on both sides = engine-off stop (refuelling, quick errand):
+    # exclude it from idle emissions and flag it for auto fill-up capture.
+    blocks: list[tuple[int, int, float]] = []  # (start_idx, end_idx, seconds)
+    start = None
+    acc = 0.0
+    for i, (dt, _, v) in enumerate(intervals):
+        if v < IDLE_SPEED_KMH:
+            if start is None:
+                start = i
+            acc += dt
+        else:
+            if start is not None:
+                blocks.append((start, i - 1, acc))
+                start, acc = None, 0.0
+    if start is not None:
+        blocks.append((start, len(intervals) - 1, acc))
+
+    refuel_pause_s = 0.0
+    engine_off_idx: set[int] = set()
+    for b_start, b_end, secs in blocks:
+        interior = b_start > 0 and b_end < len(intervals) - 1
+        if interior and REFUEL_STOP_MIN_S <= secs <= REFUEL_STOP_MAX_S:
+            refuel_pause_s += secs
+            engine_off_idx.update(range(b_start, b_end + 1))
+    refuel_stop = refuel_pause_s > 0
+
+    idle_s = sum(
+        dt for i, (dt, _, v) in enumerate(intervals)
+        if v < IDLE_SPEED_KMH and i not in engine_off_idx
+    )
     moving = [(dt, d, v) for dt, d, v in intervals if v >= IDLE_SPEED_KMH]
     moving_s = sum(dt for dt, _, _ in moving)
     moving_km = sum(d for _, d, _ in moving)
@@ -166,5 +203,7 @@ def score_trip(
         bucket=bucket,
         eco_score=eco,
         source=source,
+        refuel_stop=refuel_stop,
+        refuel_pause_s=round(refuel_pause_s, 1),
         warnings=warnings,
     )
