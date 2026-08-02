@@ -5,6 +5,7 @@ import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/stat_tile.dart';
 import '../widgets/trend_chart.dart';
+import 'fillup_sheet.dart';
 import 'settings_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -25,6 +26,11 @@ class DashboardScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.local_gas_station),
+        label: const Text('Fill-up'),
+        onPressed: () => FillUpSheet.show(context),
       ),
       body: RefreshIndicator(
         onRefresh: state.refresh,

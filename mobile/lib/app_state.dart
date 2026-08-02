@@ -17,6 +17,7 @@ class AppState extends ChangeNotifier {
   Dashboard? dashboard;
   List<Trip> trips = [];
   List<EmissionAlert> alerts = [];
+  Economy? economy;
   String? error;
   bool loading = false;
   bool autoRecordEnabled = true;
@@ -59,6 +60,7 @@ class AppState extends ChangeNotifier {
       vehicle = dashboard!.vehicle;
       trips = await api.trips(vehicleId);
       alerts = await api.alerts(vehicleId);
+      economy = await api.economy(vehicleId);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('vehicleId', vehicleId);
     } catch (e) {
@@ -79,9 +81,30 @@ class AppState extends ChangeNotifier {
     dashboard = null;
     trips = [];
     alerts = [];
+    economy = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('vehicleId');
     notifyListeners();
+  }
+
+  Future<void> setOdometer(double km) async {
+    if (vehicle == null) return;
+    await api.setOdometer(vehicle!.id, km);
+    await refresh();
+  }
+
+  Future<void> logFillUp(
+      {required double litres, double? odometerKm, bool fullTank = true}) async {
+    if (vehicle == null) return;
+    await api.addFillUp(vehicle!.id,
+        litres: litres, odometerKm: odometerKm, fullTank: fullTank);
+    await refresh();
+  }
+
+  Future<void> syncConnectedCar() async {
+    if (vehicle == null) return;
+    await api.connectedSync(vehicle!.id);
+    await refresh();
   }
 
   Future<Vehicle> registerVehicle({

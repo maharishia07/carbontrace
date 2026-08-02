@@ -62,6 +62,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.popUntil(context, (r) => r.isFirst);
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.directions_car_filled),
+            title: const Text('Sync connected car (demo)'),
+            subtitle: const Text(
+                'Pulls odometer + fuel consumed automatically, zero taps at the '
+                'pump. Uses the simulated connector until a car account is linked.'),
+            onTap: () async {
+              final state = context.read<AppState>();
+              try {
+                await state.syncConnectedCar();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Connected-car data synced')));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Sync failed: set the odometer once first '
+                          '(log a fill-up). $e')));
+                }
+              }
+            },
+          ),
           const Divider(height: 32),
           const ListTile(
             leading: Icon(Icons.battery_saver),

@@ -3,6 +3,8 @@ class Vehicle {
   final int id;
   final String name, make, model, classKey;
   final int year;
+  final double odometerKm, calibrationFactor;
+  final DateTime? calibratedAt;
 
   Vehicle.fromJson(Map<String, dynamic> j)
       : id = j['id'],
@@ -10,7 +12,65 @@ class Vehicle {
         make = j['make'] ?? '',
         model = j['model'] ?? '',
         classKey = j['class_key'] ?? '',
-        year = j['year'] ?? 0;
+        year = j['year'] ?? 0,
+        odometerKm = (j['odometer_km'] as num? ?? 0).toDouble(),
+        calibrationFactor = (j['calibration_factor'] as num? ?? 1).toDouble(),
+        calibratedAt = j['calibrated_at'] != null
+            ? DateTime.parse(j['calibrated_at'])
+            : null;
+
+  bool get fuelAnchored => calibratedAt != null;
+}
+
+class FillUpRec {
+  final int id;
+  final DateTime at;
+  final double odometerKm, litres;
+  final bool fullTank;
+  final String source;
+
+  FillUpRec.fromJson(Map<String, dynamic> j)
+      : id = j['id'],
+        at = DateTime.parse(j['at']),
+        odometerKm = (j['odometer_km'] as num).toDouble(),
+        litres = (j['litres'] as num).toDouble(),
+        fullTank = j['full_tank'] ?? true,
+        source = j['source'] ?? 'manual';
+}
+
+class EconomySegment {
+  final DateTime startAt, endAt;
+  final double km, litres, lPer100km, measuredGpkm;
+  final double? modeledGpkm, calibration;
+
+  EconomySegment.fromJson(Map<String, dynamic> j)
+      : startAt = DateTime.parse(j['start_at']),
+        endAt = DateTime.parse(j['end_at']),
+        km = (j['km'] as num).toDouble(),
+        litres = (j['litres'] as num).toDouble(),
+        lPer100km = (j['l_per_100km'] as num).toDouble(),
+        measuredGpkm = (j['measured_gpkm'] as num).toDouble(),
+        modeledGpkm =
+            j['modeled_gpkm'] == null ? null : (j['modeled_gpkm'] as num).toDouble(),
+        calibration =
+            j['calibration'] == null ? null : (j['calibration'] as num).toDouble();
+}
+
+class Economy {
+  final List<EconomySegment> segments;
+  final double calibrationFactor;
+  final DateTime? calibratedAt;
+  final int fillups;
+
+  Economy.fromJson(Map<String, dynamic> j)
+      : segments = (j['segments'] as List<dynamic>? ?? [])
+            .map((e) => EconomySegment.fromJson(e))
+            .toList(),
+        calibrationFactor = (j['calibration_factor'] as num? ?? 1).toDouble(),
+        calibratedAt = j['calibrated_at'] != null
+            ? DateTime.parse(j['calibrated_at'])
+            : null,
+        fillups = j['fillups'] ?? 0;
 }
 
 class Trip {

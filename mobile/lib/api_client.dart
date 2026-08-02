@@ -95,6 +95,43 @@ class ApiClient {
     return Trip.fromJson(jsonDecode(r.body));
   }
 
+  Future<Vehicle> setOdometer(int vehicleId, double odometerKm) async {
+    final r = await http.post(
+      _u('/vehicles/$vehicleId/odometer'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'odometer_km': odometerKm}),
+    );
+    _check(r);
+    return Vehicle.fromJson(jsonDecode(r.body));
+  }
+
+  Future<FillUpRec> addFillUp(int vehicleId,
+      {required double litres, double? odometerKm, bool fullTank = true}) async {
+    final r = await http.post(
+      _u('/vehicles/$vehicleId/fillups'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'litres': litres,
+        'odometer_km': odometerKm,
+        'full_tank': fullTank,
+      }),
+    );
+    _check(r);
+    return FillUpRec.fromJson(jsonDecode(r.body));
+  }
+
+  Future<Economy> economy(int vehicleId) async {
+    final r = await http.get(_u('/vehicles/$vehicleId/economy'));
+    _check(r);
+    return Economy.fromJson(jsonDecode(r.body));
+  }
+
+  Future<FillUpRec> connectedSync(int vehicleId) async {
+    final r = await http.post(_u('/vehicles/$vehicleId/connected/sync'));
+    _check(r);
+    return FillUpRec.fromJson(jsonDecode(r.body));
+  }
+
   void _check(http.Response r) {
     if (r.statusCode >= 400) {
       throw ApiException(r.statusCode, r.body);

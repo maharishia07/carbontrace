@@ -29,8 +29,52 @@ class VehicleIn(BaseModel):
 class VehicleOut(VehicleIn):
     id: int
     created_at: datetime
+    calibration_factor: float = 1.0
+    calibrated_at: datetime | None = None
+    odometer_km: float = 0.0
 
     model_config = {"from_attributes": True}
+
+
+class OdometerIn(BaseModel):
+    odometer_km: float = Field(gt=0, description="current dashboard odometer reading")
+
+
+class FillUpIn(BaseModel):
+    litres: float = Field(gt=0)
+    odometer_km: float | None = Field(default=None, description="omit to use the virtual odometer")
+    full_tank: bool = True
+    at: datetime | None = None
+
+
+class FillUpOut(BaseModel):
+    id: int
+    vehicle_id: int
+    at: datetime
+    odometer_km: float
+    litres: float
+    full_tank: bool
+    source: str
+
+    model_config = {"from_attributes": True}
+
+
+class EconomySegmentOut(BaseModel):
+    start_at: datetime
+    end_at: datetime
+    km: float
+    litres: float
+    l_per_100km: float
+    measured_gpkm: float
+    modeled_gpkm: float | None
+    calibration: float | None
+
+
+class EconomyOut(BaseModel):
+    segments: list[EconomySegmentOut]
+    calibration_factor: float
+    calibrated_at: datetime | None
+    fillups: int
 
 
 class TripOut(BaseModel):

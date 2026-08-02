@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../app_state.dart';
+import '../models.dart';
 import '../theme.dart';
 
 class HealthScreen extends StatelessWidget {
@@ -89,6 +90,7 @@ class HealthScreen extends StatelessWidget {
                   ),
                 ),
             ],
+            if (state.economy != null) _EconomyCard(economy: state.economy!),
             const Padding(
               padding: EdgeInsets.fromLTRB(4, 16, 4, 8),
               child: Text('History',
@@ -129,4 +131,83 @@ class HealthScreen extends StatelessWidget {
         label: Text('$label: $value', style: const TextStyle(fontSize: 12)),
         visualDensity: VisualDensity.compact,
       );
+}
+
+class _EconomyCard extends StatelessWidget {
+  final Economy economy;
+  const _EconomyCard({required this.economy});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.local_gas_station,
+                  size: 18, color: CtColors.brand),
+              const SizedBox(width: 6),
+              const Text('Measured fuel economy',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              const Spacer(),
+              if (economy.calibratedAt != null)
+                const Tooltip(
+                  message: 'Estimates are anchored to your real fuel data',
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.verified, size: 16, color: CtColors.ok),
+                    SizedBox(width: 3),
+                    Text('Fuel-anchored',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: CtColors.ok,
+                            fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+            ]),
+            const SizedBox(height: 6),
+            if (economy.segments.isEmpty)
+              Text(
+                economy.fillups == 0
+                    ? 'Log your fill-ups (⛽ button on the dashboard) — two full '
+                        'tanks give your first measured reading, and all estimates '
+                        'get calibrated against real fuel burned.'
+                    : 'One more full-tank fill-up and your first measured '
+                        'economy reading appears.',
+                style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+              )
+            else ...[
+              ...economy.segments.reversed.take(4).map((s) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(children: [
+                      Expanded(
+                        child: Text(
+                            '${DateFormat('d MMM').format(s.startAt.toLocal())} – '
+                            '${DateFormat('d MMM').format(s.endAt.toLocal())}  ·  '
+                            '${s.km.toStringAsFixed(0)} km',
+                            style: const TextStyle(fontSize: 12.5)),
+                      ),
+                      Text(
+                          '${s.lPer100km.toStringAsFixed(1)} L/100km  ·  '
+                          '${s.measuredGpkm.toStringAsFixed(0)} g/km',
+                          style: const TextStyle(
+                              fontSize: 12.5, fontWeight: FontWeight.w600)),
+                    ]),
+                  )),
+              if (economy.calibratedAt != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Model calibration: ×${economy.calibrationFactor.toStringAsFixed(2)} '
+                    '(measured ÷ modelled). Trip estimates use this factor.',
+                    style: const TextStyle(fontSize: 11.5, color: Colors.black54),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }

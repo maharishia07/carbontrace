@@ -95,6 +95,62 @@ def test_full_degradation_story():
     assert dash["active_alert"] is None
 
 
+def test_fillup_flow_and_calibration():
+    """Odometer set once -> trips advance it -> fill-ups give measured
+    economy -> vehicle gets calibrated -> health becomes fuel-backed."""
+    vid = make_vehicle()
+    r = client.post(f"/vehicles/{vid}/odometer", json={"odometer_km": 20000})
+    assert r.status_code == 200 and r.json()["odometer_km"] == 20000
+
+    # first fill-up opens the measurement window (odometer auto-filled)
+    r = client.post(f"/vehicles/{vid}/fillups", json={
+        "litres": 28.0,
+        "at": (datetime.utcnow() - timedelta(days=13)).isoformat(),
+    })
+    assert r.status_code == 200
+    assert r.json()["odometer_km"] == 20000
+
+    # drive: model-scored trips advance the virtual odometer
+    total_km = 0.0
+    for i in range(12):
+        sim = simulate_trip("city", 25, SPEC, degradation=0.0, seed=3000 + i)
+        started = (datetime.utcnow() - timedelta(days=12 - i)).isoformat()
+        rr = client.post(f"/vehicles/{vid}/trips", json={
+            "started_at": started, "cold_start": False, "fuel_litres": None,
+            "points": [{"t": p.t, "lat": p.lat, "lon": p.lon, "speed_kmh": p.speed_kmh}
+                       for p in sim.points],
+        })
+        assert rr.status_code == 200, rr.text
+        total_km += rr.json()["distance_km"]
+    veh = [v for v in client.get("/vehicles").json() if v["id"] == vid][0]
+    assert abs(veh["odometer_km"] - (20000 + total_km)) < 1.0
+
+    # second full tank closes the window -> measured economy + calibration
+    litres = total_km * 7.0 / 100.0  # measured 7 L/100km
+    r = client.post(f"/vehicles/{vid}/fillups", json={"litres": round(litres, 2)})
+    assert r.status_code == 200
+    eco = client.get(f"/vehicles/{vid}/economy").json()
+    assert eco["fillups"] == 2
+    assert len(eco["segments"]) == 1
+    assert abs(eco["segments"][0]["l_per_100km"] - 7.0) < 0.15
+    assert eco["calibration_factor"] != 1.0
+    assert eco["calibrated_at"] is not None
+
+    health = client.get(f"/vehicles/{vid}/health").json()
+    assert health["fuel_backed"] or health["status"] == "learning"
+
+
+def test_connected_mock_sync():
+    vid = make_vehicle()
+    client.post(f"/vehicles/{vid}/odometer", json={"odometer_km": 5000})
+    r = client.post(f"/vehicles/{vid}/connected/sync")
+    assert r.status_code == 200
+    f = r.json()
+    assert f["source"] == "connected"
+    assert f["odometer_km"] > 5000
+    assert f["litres"] > 0
+
+
 def test_dashboard_totals_shape():
     vid = make_vehicle()
     upload_sim_trip(vid, 59, 0.0, seed=42)  # today-ish

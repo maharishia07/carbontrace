@@ -104,8 +104,11 @@ def analyze(samples: list[TripSample]) -> HealthReport:
         and median(recent_idle) > median(early_idle) * (1 + WATCH_DRIFT)
     )
 
-    # is the recent signal grounded in real fuel data?
-    fuel_backed = sum(1 for _, s in recent if s.source == "fuel") >= max(1, len(recent) // 2)
+    # is the recent signal grounded in real fuel data? ("fuel" = direct fuel
+    # figures; "calibrated" = model trips anchored by fill-up measurements)
+    fuel_backed = sum(
+        1 for _, s in recent if s.source in ("fuel", "calibrated")
+    ) >= max(1, len(recent) // 2)
 
     drift = ewma - 1.0
     drift_pct = round(drift * 100.0, 1)
