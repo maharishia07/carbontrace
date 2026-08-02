@@ -49,6 +49,14 @@ class TripRecorder {
 
   int get pointCount => _points.length;
 
+  /// Open Android's Notification Access settings so the user can enable
+  /// automatic fuel-payment capture.
+  static Future<void> openNotificationAccess() async {
+    try {
+      await _channel.invokeMethod('openNotificationAccess');
+    } catch (_) {}
+  }
+
   Future<bool> ensurePermissions() async {
     var p = await Geolocator.checkPermission();
     if (p == LocationPermission.denied) {

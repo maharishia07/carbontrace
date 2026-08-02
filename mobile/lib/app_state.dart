@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,6 +25,8 @@ class AppState extends ChangeNotifier {
   String? error;
   bool loading = false;
   bool autoRecordEnabled = true;
+  double fuelPricePerLitre = 102.0; // editable in Settings
+  String? lastAutoFillupNote; // surfaced once after an automatic capture
 
   AppState() {
     recorder.onTripCompleted = _onTripCompleted;
@@ -36,11 +40,62 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     api.baseUrl = prefs.getString('server') ?? defaultServer;
     autoRecordEnabled = prefs.getBool('autoRecord') ?? true;
+    fuelPricePerLitre = prefs.getDouble('fuelPrice') ?? 102.0;
     final vid = prefs.getInt('vehicleId');
     if (vid != null) {
       await selectVehicle(vid);
     }
     notifyListeners();
+  }
+
+  Future<void> setFuelPrice(double price) async {
+    fuelPricePerLitre = price;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('fuelPrice', price);
+    notifyListeners();
+  }
+
+  /// Convert payment notifications captured by the native listener into
+  /// automatic fill-ups: litres = amount / fuel price, odometer virtual.
+  Future<void> _processPendingPayments() async {
+    if (vehicle == null || vehicle!.odometerKm <= 0) return;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('pending_fuel_payments');
+    if (raw == null || raw.isEmpty) return;
+    List<dynamic> pending;
+    try {
+      pending = jsonDecode(raw) as List<dynamic>;
+    } catch (_) {
+      await prefs.remove('pending_fuel_payments');
+      return;
+    }
+    if (pending.isEmpty) return;
+
+    var logged = 0;
+    for (final e in pending) {
+      final amount = (e['amount_inr'] as num?)?.toDouble();
+      final t = (e['t'] as num?)?.toDouble();
+      if (amount == null || t == null) continue;
+      final at = DateTime.fromMillisecondsSinceEpoch((t * 1000).round());
+      // ignore stale captures (older than 24h)
+      if (DateTime.now().difference(at) > const Duration(hours: 24)) continue;
+      final litres = amount / fuelPricePerLitre;
+      if (litres < 1 || litres > 120) continue;
+      try {
+        await api.addFillUp(vehicle!.id,
+            litres: double.parse(litres.toStringAsFixed(2)), fullTank: true);
+        logged++;
+        lastAutoFillupNote =
+            'Auto-logged fill-up: ₹${amount.toStringAsFixed(0)} ≈ '
+            '${litres.toStringAsFixed(1)} L (from your payment notification)';
+      } catch (_) {
+        // backend unreachable — keep pending for next refresh
+        return;
+      }
+    }
+    if (logged > 0) {
+      await prefs.remove('pending_fuel_payments');
+    }
   }
 
   Future<void> setServer(String url) async {
@@ -69,6 +124,13 @@ class AppState extends ChangeNotifier {
       economy = await api.economy(vehicleId);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('vehicleId', vehicleId);
+      // zero-touch fill-ups: fold in any captured fuel payments
+      final before = lastAutoFillupNote;
+      await _processPendingPayments();
+      if (lastAutoFillupNote != before) {
+        dashboard = await api.dashboard(vehicleId);
+        economy = await api.economy(vehicleId);
+      }
     } catch (e) {
       error = e.toString();
     } finally {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../app_state.dart';
+import '../services/trip_recorder.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -160,6 +161,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               }
             },
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications_active),
+            title: const Text('Auto-capture fuel payments'),
+            subtitle: Text(
+                'Grant Notification Access and fill-ups log themselves from '
+                'UPI/card payment alerts at fuel stations — no typing at the '
+                'pump. Litres = amount ÷ fuel price '
+                '(₹${state.fuelPricePerLitre.toStringAsFixed(0)}/L, set below).'),
+            onTap: () => TripRecorder.openNotificationAccess(),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextFormField(
+              initialValue: state.fuelPricePerLitre.toStringAsFixed(2),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Fuel price (₹ per litre)',
+                prefixIcon: Icon(Icons.currency_rupee),
+                helperText: 'Used to convert payment amounts to litres',
+              ),
+              onFieldSubmitted: (v) {
+                final p = double.tryParse(v);
+                if (p != null && p > 50 && p < 250) state.setFuelPrice(p);
+              },
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.memory),

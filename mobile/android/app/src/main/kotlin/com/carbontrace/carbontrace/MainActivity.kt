@@ -1,5 +1,6 @@
 ﻿package com.carbontrace.carbontrace
 
+import android.content.Intent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
@@ -23,6 +24,15 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         FlutterEngineCache.getInstance().put(ENGINE_ID, flutterEngine)
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        channel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "openNotificationAccess" -> {
+                    startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
         obd = ObdBridge(this).also {
             it.attach(MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OBD_CHANNEL))
         }
