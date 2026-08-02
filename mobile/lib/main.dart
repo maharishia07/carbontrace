@@ -58,17 +58,31 @@ class _RootScreenState extends State<RootScreen> {
     ];
     return Scaffold(
       body: screens[_tab],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.route), label: 'Trips'),
-          NavigationDestination(
-              icon: Icon(Icons.fiber_manual_record), label: 'Record'),
-          NavigationDestination(
-              icon: Icon(Icons.health_and_safety), label: 'Health'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+        ),
+        child: NavigationBar(
+          selectedIndex: _tab,
+          onDestinationSelected: (i) => setState(() => _tab = i),
+          destinations: const [
+            NavigationDestination(
+                icon: Icon(Icons.space_dashboard_outlined),
+                selectedIcon: Icon(Icons.space_dashboard_rounded),
+                label: 'Dashboard'),
+            NavigationDestination(
+                icon: Icon(Icons.route_outlined),
+                selectedIcon: Icon(Icons.route_rounded),
+                label: 'Trips'),
+            NavigationDestination(
+                icon: Icon(Icons.radio_button_checked),
+                label: 'Record'),
+            NavigationDestination(
+                icon: Icon(Icons.monitor_heart_outlined),
+                selectedIcon: Icon(Icons.monitor_heart_rounded),
+                label: 'Health'),
+          ],
+        ),
       ),
     );
   }

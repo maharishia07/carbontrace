@@ -7,10 +7,6 @@ import '../app_state.dart';
 import '../theme.dart';
 
 /// Manual trip recording + auto-record status.
-///
-/// In normal use trips start themselves (car Bluetooth / motion). This
-/// screen exists for the demo, for testing, and as the visible state of
-/// the recorder.
 class RecordScreen extends StatefulWidget {
   const RecordScreen({super.key});
 
@@ -24,7 +20,6 @@ class _RecordScreenState extends State<RecordScreen> {
   @override
   void initState() {
     super.initState();
-    // repaint every second while recording so duration/point count tick up
     _ticker = Timer.periodic(
         const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
   }
@@ -42,78 +37,119 @@ class _RecordScreenState extends State<RecordScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Record')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
               color: state.autoRecordEnabled
                   ? CtColors.brandLight
-                  : Colors.grey.shade100,
-              child: SwitchListTile(
-                title: const Text('Auto-record trips'),
-                subtitle: const Text(
-                    'Starts recording when your phone connects to the car\'s '
-                    'Bluetooth or driving is detected'),
-                value: state.autoRecordEnabled,
-                onChanged: (v) => state.setAutoRecord(v),
-              ),
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                  color: state.autoRecordEnabled
+                      ? CtColors.brandBright.withValues(alpha: 0.4)
+                      : CtColors.divider),
             ),
-            const SizedBox(height: 24),
-            Icon(
-              rec.recording ? Icons.gps_fixed : Icons.gps_off,
-              size: 72,
-              color: rec.recording ? CtColors.ok : Colors.black26,
+            child: SwitchListTile(
+              title: const Text('Auto-record trips',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              subtitle: const Text(
+                  'Starts when your phone connects to the car\'s Bluetooth or driving is detected',
+                  style: TextStyle(fontSize: 12.5)),
+              activeThumbColor: CtColors.brand,
+              value: state.autoRecordEnabled,
+              onChanged: (v) => state.setAutoRecord(v),
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                rec.recording
-                    ? 'Recording — ${rec.pointCount} points'
-                    : 'Not recording',
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-            if (rec.recording && rec.startedAt != null)
-              Center(
-                child: Text(
-                  'Started ${TimeOfDay.fromDateTime(rec.startedAt!).format(context)}',
-                  style: const TextStyle(color: Colors.black54),
-                ),
-              ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: rec.recording ? CtColors.alert : CtColors.brand,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              icon: Icon(rec.recording ? Icons.stop : Icons.play_arrow),
-              label: Text(rec.recording ? 'Stop & save trip' : 'Start recording'),
-              onPressed: () async {
+          ),
+          const SizedBox(height: 44),
+          Center(
+            child: GestureDetector(
+              onTap: () async {
                 if (rec.recording) {
                   await rec.stop();
                 } else {
                   await rec.start();
                   if (!rec.recording && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text(
-                            'Location permission needed to record trips')));
+                        content:
+                            Text('Location permission needed to record trips')));
                   }
                 }
                 setState(() {});
               },
+              child: Container(
+                width: 168,
+                height: 168,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: rec.recording
+                      ? const LinearGradient(
+                          colors: [Color(0xFFBE123C), Color(0xFFE11D48)])
+                      : CtColors.heroGradient,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (rec.recording
+                              ? const Color(0xFFE11D48)
+                              : CtColors.brandBright)
+                          .withValues(alpha: 0.35),
+                      blurRadius: 34,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                        rec.recording
+                            ? Icons.stop_rounded
+                            : Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 52),
+                    Text(rec.recording ? 'STOP & SAVE' : 'START TRIP',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2)),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'Trips shorter than ~200 m are discarded. Recording stops itself '
-              'after 5 minutes parked.',
+          ),
+          const SizedBox(height: 28),
+          Center(
+            child: Column(children: [
+              Text(
+                rec.recording
+                    ? 'Recording — ${rec.pointCount} GPS points'
+                    : 'Not recording',
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: CtColors.ink),
+              ),
+              if (rec.recording && rec.startedAt != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Started ${TimeOfDay.fromDateTime(rec.startedAt!).format(context)}',
+                    style: const TextStyle(color: CtColors.inkSecondary),
+                  ),
+                ),
+            ]),
+          ),
+          const SizedBox(height: 28),
+          const Center(
+            child: Text(
+              'Trips shorter than ~200 m are discarded.\nRecording stops itself after 5 minutes parked.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: CtColors.inkFaint, height: 1.5),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

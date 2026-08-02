@@ -23,37 +23,64 @@ class HealthScreen extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           children: [
             if (health != null) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Icon(CtColors.statusIcon(health.status),
-                          size: 56, color: CtColors.statusColor(health.status)),
-                      const SizedBox(height: 8),
-                      Text(CtColors.statusLabel(health.status),
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: CtColors.statusColor(health.status))),
-                      const SizedBox(height: 6),
-                      Text(health.message, textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          _chip('Drift',
-                              '${health.driftPct >= 0 ? '+' : ''}${health.driftPct.toStringAsFixed(1)}%'),
-                          _chip('Trips analysed', '${health.tripsAnalyzed}'),
-                          _chip('Data',
-                              health.fuelBacked ? 'Fuel-backed' : 'Model estimate'),
-                          if (health.idleRising) _chip('Idle CO₂', 'Rising'),
-                        ],
-                      ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      CtColors.statusColor(health.status)
+                          .withValues(alpha: 0.12),
+                      CtColors.statusColor(health.status)
+                          .withValues(alpha: 0.04),
                     ],
                   ),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                      color: CtColors.statusColor(health.status)
+                          .withValues(alpha: 0.30)),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: ctShadow,
+                      ),
+                      child: Icon(CtColors.statusIcon(health.status),
+                          size: 40,
+                          color: CtColors.statusColor(health.status)),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(CtColors.statusLabel(health.status),
+                        style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                            color: CtColors.statusColor(health.status))),
+                    const SizedBox(height: 6),
+                    Text(health.message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13, height: 1.4)),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _chip('Drift',
+                            '${health.driftPct >= 0 ? '+' : ''}${health.driftPct.toStringAsFixed(1)}%'),
+                        _chip('Trips analysed', '${health.tripsAnalyzed}'),
+                        _chip('Data',
+                            health.fuelBacked ? 'Fuel-backed' : 'Model estimate'),
+                        if (health.idleRising) _chip('Idle CO₂', 'Rising'),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               if (active != null && active.servicedAt == null)
