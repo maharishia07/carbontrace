@@ -50,7 +50,7 @@ class _RootScreenState extends State<RootScreen> {
       return const VehicleSetupScreen();
     }
 
-    final screens = const [
+    const screens = [
       DashboardScreen(),
       TripsScreen(),
       RecordScreen(),

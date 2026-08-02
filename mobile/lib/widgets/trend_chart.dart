@@ -64,7 +64,7 @@ class _TrendPainter extends CustomPainter {
     final grid = Paint()
       ..color = Colors.black12
       ..strokeWidth = 1;
-    final labelStyle = const TextStyle(color: Colors.black54, fontSize: 10);
+    const labelStyle = TextStyle(color: Colors.black54, fontSize: 10);
     for (var i = 0; i <= 2; i++) {
       final v = lo + (hi - lo) * i / 2;
       final yy = y(v);
@@ -85,7 +85,7 @@ class _TrendPainter extends CustomPainter {
         Paint()..color = CtColors.baselineBand,
       );
       final dash = Paint()
-        ..color = CtColors.brand.withOpacity(0.55)
+        ..color = CtColors.brand.withValues(alpha: 0.55)
         ..strokeWidth = 1.4;
       final yy = y(baseline!);
       for (var xx = padL; xx < size.width - padR; xx += 8) {

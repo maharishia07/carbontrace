@@ -104,7 +104,7 @@ class _HealthBanner extends StatelessWidget {
     final color = CtColors.statusColor(health.status);
 
     return Card(
-      color: color.withOpacity(0.09),
+      color: color.withValues(alpha: 0.09),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
