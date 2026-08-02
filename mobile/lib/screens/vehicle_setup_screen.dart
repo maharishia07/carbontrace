@@ -74,9 +74,16 @@ class _VehicleSetupScreenState extends State<VehicleSetupScreen> {
         title: const Text('CarbonTrace — add your car'),
         actions: [
           IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _busy ? null : _load),
+          IconButton(
               icon: const Icon(Icons.settings),
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+              onPressed: () async {
+                // reload after settings: the server URL may have changed
+                await Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                _load();
+              }),
         ],
       ),
       body: ListView(
